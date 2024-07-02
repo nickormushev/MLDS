@@ -1,0 +1,22 @@
+Params: {'units': [40], 'lambda_': 4}, 0.5535109116679466
+Params: {'units': [40], 'lambda_': 4.5}, 0.55418617577876
+Params: {'units': [40], 'lambda_': 5}, 0.5498600775590411
+Params: {'units': [40], 'lambda_': 6}, 0.5483012860788621
+Params: {'units': [40], 'lambda_': 6}, 0.5512694904777666
+Params: {'units': [40], 'lambda_': 7}, 0.5494264989250125
+Params: {'units': [40], 'lambda_': 8}, 0.5484060304347744
+Params: {'units': [40], 'lambda_': 9}, 0.5486370009576047
+Params: {'units': [50], 'lambda_': 6}, 0.5511276058731822
+Params: {'units': [50], 'lambda_': 7}, 0.5446752189770441
+Params: {'units': [50], 'lambda_': 8}, 0.5418219835853197
+Params: {'units': [50], 'lambda_': 9}, 0.5440859065978778
+Params: {'units': [60], 'lambda_': 8}, 0.5431703484872198
+Params: {'units': [60], 'lambda_': 9}, 0.5379301516096429
+Params: {'units': [60], 'lambda_': 10}, 0.5424214636175599
+Params: {'units': [60], 'lambda_': 11}, 0.5382884839402504
+Params: {'units': [70], 'lambda_': 10}, 0.5378000822914873
+Params: {'units': [70], 'lambda_': 11}, 0.5358867156070284
+Params: {'units': [70, 80], 'lambda_': 12}, 0.5342581956363823
+Params: {'units': [70, 80], 'lambda_': 13}, 0.5319303390398695
+Params: {'units': [90], 'lambda_': 14}, 0.5304367579703112
+Params: {'units': [160], 'lambda_': 18}, 0.5199427628717288

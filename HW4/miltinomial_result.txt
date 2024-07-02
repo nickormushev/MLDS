@@ -1,0 +1,46 @@
+LOG: Mean error:  720.2196173888167 Std error:  108.21812509331569
+
+
+ALL using high initialization without multiplyuing by 0.01
+
+[20] lambda 2.5
+Mean error:  0.7627528322977696 Std error:  0.006082625433969567 
+
+[20] lambda 3.5
+Mean error:  0.7560416690433909 Std error:  0.008290134385610519
+
+[20] lambda: 10
+Mean error:  0.7348897367298878 Std error:  0.008504695230519058
+
+Mean error:  0.7700329442583296 Std error:  0.006889631768258713
+
+
+Smaller 0.01
+[20] lambda 2.5
+Mean error:  0.5693781378169589 Std error:  0.00588259986476423
+
+[30] lambda 2
+Mean error:  0.5646652922832955 Std error:  0.008032152912919406
+
+[30] lambda 2.5
+Mean error:  0.5592782073139958 Std error:  0.0061682253085772335
+
+[30] lambda 3
+Mean error:  0.5590788771428962 Std error:  0.006125239498088193
+
+
+[40] lambda 2.5
+5-fold
+Mean error:  0.5570579375306888 Std error:  0.006360115117991446
+
+10-fold
+Mean error:  0.5507792186600995 Std error:  0.005883378916002895
+
+
+
+[60] lambda 2.5
+Mean error:  0.5590788771428962 Std error:  0.006125239498088193
+
+Params: {'units': [40], 'lambda_': 2.5}, 0.5499489676351094
+Params: {'units': [40], 'lambda_': 2.4}, 0.5528734385915042
+Params: {'units': [40], 'lambda_': 2.6}, 0.5528740718704029

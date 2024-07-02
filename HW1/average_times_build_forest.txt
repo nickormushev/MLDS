@@ -1,0 +1,7 @@
+Function: build_forest
+Average build time: 13.087558574676514
+Std build time: 1.4130152260131073
+Average train error rate: 0.0
+Average train standard error: 0.0
+Average test error rate: 0.02775862068965515
+Average test standard error: 0.021017917600956455

@@ -1,0 +1,7 @@
+Function: build_tree
+Average build time: 1.8579703164100647
+Std build time: 0.07176865504025161
+Average train error rate: 0.0
+Average train standard error: 0.0
+Average test error rate: 0.18965517241379332
+Average test standard error: 0.051475820904255884
