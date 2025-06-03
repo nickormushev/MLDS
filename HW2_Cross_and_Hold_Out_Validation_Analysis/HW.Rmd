@@ -1,0 +1,486 @@
+# Homework 2
+
+```{r}
+Sys.setenv(
+  RSTUDIO_PANDOC =
+    "/home/nikolay/R/x86_64-pc-linux-gnu-library/4.3/pandoc"
+)
+```
+
+```{r}
+toy_data <- function(n, seed = NULL) {
+  set.seed(seed)
+  x <- matrix(rnorm(8 * n), ncol = 8)
+  z <- 0.4 * x[, 1] - 0.5 * x[, 2] + 1.75 * x[, 3] - 0.2 * x[, 4] + x[, 5]
+  y <- runif(n) > 1 / (1 + exp(-z))
+  return(data.frame(x = x, y = y))
+}
+
+log_loss <- function(y, p) {
+  -(y * log(p) + (1 - y) * log(1 - p))
+}
+
+sample_size <- 100000
+df_dgp <- toy_data(sample_size, 0)
+
+# Idea how he determined the sample_size.
+data <- toy_data(50, 0)
+model <- glm(df_dgp$y ~ ., data = df_dgp, family = binomial)
+res <- get_losses_and_risk(model, df_dgp)
+
+stderr <- calculate_ci_stderr(res$test_losses, res$test_risk)
+
+print(stderr)
+```
+
+# Task 1
+```{r}
+get_moe <- function(sample_stderr, len, test_risk) {
+  t_score <- qt(0.025, df = len - 1, lower.tail = FALSE)
+
+  moe <- t_score * sample_stderr
+
+  ci_lower <- test_risk - moe
+  ci_upper <- test_risk + moe
+
+  list(ci_lower = ci_lower, ci_upper = ci_upper, std_err = sample_stderr)
+}
+
+calculate_ci_stderr <- function(test_losses, test_risk) {
+  sample_stderr <- sd(test_losses) / sqrt(length(test_losses))
+  get_moe(sample_stderr, length(test_losses), test_risk)
+}
+
+get_losses_and_risk <- function(model, test) {
+  predictions <- predict(model, newdata = test, type = "response")
+  test_losses <- log_loss(test$y, predictions)
+  test_risk <- mean(test_losses)
+
+  list(test_losses = test_losses, test_risk = test_risk)
+}
+```
+
+## Baseline for 0.5 predcitions
+```{r}
+set.seed(0)
+fifty_fifty_predictions <- rep(0.5, sample_size)
+
+fifty_fifty_predictions_risk <-
+  mean(log_loss(df_dgp$y, fifty_fifty_predictions))
+
+fifty_fifty_predictions_risk
+```
+
+## Rest of task
+```{r}
+z_score <- qnorm(0.05 / 2, lower.tail = FALSE)
+
+train_data <- toy_data(50, 0)
+
+model <- glm(train_data$y ~ ., data = train_data, family = binomial)
+
+predictions <- predict(model, newdata = df_dgp, type = "response")
+
+true_risk <- sum(log_loss(df_dgp$y, predictions)) / sample_size
+
+risk_in_interval <- 0
+
+run_times <- 1000
+
+test_risks <- c()
+std_errs <- c()
+
+for (i in seq(1:run_times + 1)) {
+  test_data <- toy_data(50, i)
+  losses_risk <- get_losses_and_risk(model, test_data)
+
+  test_risks <- c(test_risks, losses_risk$test_risk)
+
+  res <- calculate_ci_stderr(
+    losses_risk$test_losses,
+    losses_risk$test_risk
+  )
+
+  std_errs <- c(std_errs, res$std_err)
+
+  # adds +1 if in interval
+  risk_in_interval <- risk_in_interval +
+    (res$ci_lower <= true_risk && true_risk <= res$ci_upper)
+}
+
+risk_in_interval_percentage <- risk_in_interval / run_times
+
+risks_diff <- test_risks - true_risk
+plot_risks_density <- density(risks_diff)
+
+mean <- mean(risks_diff)
+
+plot(plot_risks_density,
+  main = "Density Plot",
+  xlab = "test_risk - true_risk", ylab = "Density"
+)
+grid(nx = NULL, ny = NULL, col = "black")
+
+med_std_err <- median(std_errs)
+
+max(std_errs)
+true_risk
+fifty_fifty_predictions_risk
+risk_in_interval_percentage
+mean
+med_std_err
+```
+
+## Conclusions
+
+### What do we see?
+On the plot and from the small mean we can see that difference of the estimated risk 
+and the true risk on average is close to 0. This shows that even a small test set 
+can get a pretty good estimation of the true risk but the variance is quite high
+and because of this in some cases the difference can be big as well showing 
+that our estimations are biased (pessimistic/optimistic).
+
+# Not sure how to interpret median
+Almost 93% of the time the true risk is inside of our 95% confidence interval for the 
+estimated risks. This begs the question why is this not 95% if this is a 95% confidence
+interval. I believe this is due in some part to chance and in some part to the amount 
+of test samples we have. Based on the central limit theorem with more samples the expected
+risk will get closer to a normal distribution and our estimates will be more accurate as 
+well cause the data will be a better representation of the true risk and the law of 
+large numbers says our average will become a better estimate of the true risk.
+
+The fact that making 0.5-0.5 predictions gives a higher loss/risk than our true risk shows that
+even with just 50 samples we have managed to makes better estimations (maybe not by much) than 
+random guessing. Still the results are not optimal.
+
+### What are the implications for practical use?
+I would say that it shows that even with a small sample size we can make a somewhat decent 
+estimate of the true risk. Still it is not unlikely to see bias in our results by either
+over or underestimating the risk depending on what our train set contains. Because of this 
+if we have little data it is a good idea to run multiple times and employ methods that
+reduce variance like maybe cross validation.
+
+### How would these results change if the train set was larger/smaller?
+I believe that with the increase of the train set size the risk on the testing set and the whole set
+will dicrease. It is possible though that since the test set is smaller we will have 
+seen similar examples before in our train set and it will stop being representative of the 
+true risk and the difference between the two might increase. A possible cause of this is 
+overfitting where we do well on the train and test set but not on all examples. With
+enough data that is representative of the data generative process(dgp) this will stop being a problem. 
+
+I believe making the training set smaller will increase both the estimated and the true risk because
+we will overfit the train set and not be able to generalize well. This will result in higher 
+standard error and it is possible that the difference between the true and estimated risk will incrase
+due to their values becoming much higher and since the true risk has more samples its loss will increase
+much more than that of the estimated risk.
+
+### How would these results change if the train set was larger/smaller?
+I believe that if our test set was bigger the difference in test and true risk would shrink. The 
+reason for this is that the test set would be more representative of the dgp.
+Since the dgp process is the same we can think about it also in the sense that calling toy_data with 
+a similar sample sizes closer to the size the dgp set for the test set it should make around the
+same amount of errors. So the difference between the two should be smaller. This would also result
+in our true risk to to be more often inside the 95% confidence interval of our estimation since 
+the results would be closer.
+
+If the test set becomes small enough it might introduce a bias on our estimates because 
+the variance between the possible small test sets is big. If our test set has similar 
+examples to the train set it will do well and be optimistic in its estimate/overfit but it
+can also do very poorly so our estimate will become very pessimistic because it will think
+we have a much higher risk than we actually do. To summarise the estimate will not be good with 
+too few samples.
+
+# Task 2
+
+```{r}
+num_obs <- 50
+repetitions <- 50
+risk_diff <- c()
+
+for (i in seq(repetitions)) {
+  data1 <- toy_data(num_obs, 2 * i)
+  data2 <- toy_data(num_obs, 2 * i + 1)
+
+  combined_data <- rbind(data1, data2)
+
+  model1 <- glm(data1$y ~ ., data = data1, family = binomial)
+  model_combined <- glm(combined_data$y ~ .,
+    data = combined_data, family = binomial
+  )
+
+  model1_pred <- predict(model1, newdata = df_dgp, type = "response")
+  model_combined_pred <- predict(model_combined,
+    newdata = df_dgp,
+    type = "response"
+  )
+
+  model1_risk <- mean(log_loss(df_dgp$y, model1_pred))
+  model_combined_risk <- mean(log_loss(
+    df_dgp$y,
+    model_combined_pred
+  ))
+
+  risk_diff <- c(risk_diff, model1_risk - model_combined_risk)
+}
+
+summary(risk_diff)
+```
+
+## Conclusions
+
+### What do we see?
+We can see that the first dataset has a signficantly higher risk than the combined one. 
+This is expected as the combined dataset has more observations which reduces variance 
+and the mean becomes closer to the mean of the dgp by the law of large numbers which 
+makes the model a better representation.
+
+### What are the implications in practical use?
+The implications on practical use is that it is better to have a larger dataset and to make 
+use of all of our data when training our models. This of course doesn't mean methods like holdout
+estimation shouldn't be used. More that it should be used to fine tune our models, select best learner
+and at the end we can use the whole dataset to train the model for a few more epochs to 
+improve the results.
+
+### How would these results change if the data sets were larger or smaller?
+If we make data2 larger I think the difference between the two models will increase.
+This is because the combined model will get more data and would become a better 
+representation of the dgpt and ovefit less. 
+
+If the samples in data1 increase I think the difference will progressively become smaller. 
+The combined model will once again be a better representation of the dgp because it has more
+samples but after a point adding adding just 50 samples will not make a big difference because 
+the model already has enough.
+
+If we increase the size of both equally. Then again I think that the difference will
+dicrease after a point since adding 50 samples to a small sample size can have a big 
+impact but doubling the sample size of an already big dataset will likely have 
+diminishing returns and just take longer to train.
+
+# Task 3
+  
+```{r}
+split_data <- function(data, train_sample_size) {
+  split_idxs <- sample(train_sample_size)
+  half <- train_sample_size %/% 2
+
+  left_idx <- split_idxs[1:half]
+  right_idx <- split_idxs[(half + 1):length(split_idxs)]
+  train <- data[left_idx, ]
+  test <- data[right_idx, ]
+
+  list(train = train, test = test)
+}
+
+train_sample_size <- 100
+data <- toy_data(train_sample_size, 0)
+
+model <- glm(data$y ~ ., data = data, family = binomial)
+
+predictions <- predict(model, newdata = df_dgp, type = "response")
+
+true_risk <- mean(log_loss(df_dgp$y, predictions))
+
+repetitions <- 1000
+true_risk_in_interval <- 0
+
+est_risks <- c()
+std_errs <- c()
+
+for (i in seq(1:repetitions)) {
+  split_result <- split_data(data, train_sample_size)
+  train <- split_result$train
+  test <- split_result$test
+
+  model <- glm(train$y ~ ., data = train, family = binomial)
+
+  losses_risk <- get_losses_and_risk(model, test)
+
+  est_risks <- c(est_risks, losses_risk$test_risk)
+
+  res <- calculate_ci_stderr(
+    losses_risk$test_losses,
+    losses_risk$test_risk
+  )
+
+  std_errs <- c(std_errs, res$std_err)
+
+  true_risk_in_interval <- true_risk_in_interval +
+    (res$ci_lower <= true_risk && true_risk <= res$ci_upper)
+}
+
+plot_dt <- density(est_risks - true_risk)
+
+plot(plot_dt,
+  main = "Density Plot",
+  xlab = "test_risk - true_risk", ylab = "Density"
+)
+
+grid(nx = NULL, ny = NULL, col = "black")
+
+risk_diff_mean <- mean(est_risks - true_risk)
+std_err_median <- median(std_errs)
+percentage_in_interval <- true_risk_in_interval / repetitions
+
+true_risk
+risk_diff_mean
+std_err_median
+percentage_in_interval
+```
+
+## Conclusions
+
+### What do we see?
+From the density plot we can see that most of the time we will get a split that will give
+us good results because the mean is still 0.2 and close to 0. On the other hand if we are unliky 
+we migh get a train test split that is highly biased and we will get a much higher risk than the true risk.
+In this case our estimates are pessimistc and we can see that they can have a significant difference for up to 12 
+to the true risk.
+
+### What are the implications for practical use?
+I would say this shows we should be careful when choosing our splits. Of course to not add bias we 
+should use random splits but we should also run the estimation multiple times to make sure they are 
+correct.
+
+### How would these results change if the data set was larger/smaller?
+I assume that with a larger the likelyhood of choosing a test set that is not representative of the dgp
+is less likely/it will reduce bias. This is of course assuming the data is diverce and we don't have 
+to take into account things like spatial or temporal aspects. This also would increase the variance
+in the results because we have more options on how we choose which elements go in the test set.
+
+For smaller datasets it is quite the opposite. It becomes hard to make a good split so to not 
+introduce bias. Maybe the test set will be all examples the train set has never seen or the opposite
+only examples similar to ones it has seen. This is why it is a good idea to use cross validation
+or another method that evaluates multiple splits to better estimate your model.
+
+###  How would these results change if the proportion of training data was larger/smaller?
+For a larger proportion of training data I believe we would start reducing the varaince for 
+our test set and adding more bias to it. The smaller we make the test set the less representative 
+it becomes of our dgp. This is something we need to keep in mind when making our split.
+
+For a small proportion of training data we would likely get a simple and understandable model
+that overfits and does not generalise very well.
+
+# Task 4
+
+```{r}
+
+cross_validation_with_rep <- function(k, data, data_size,
+                                      true_risk, reps = 1) {
+  losses <- rep(0, length(data$y))
+  splits <- split(data, cut(seq(data_size), k, labels = FALSE))
+
+  for (rep in seq(reps)) {
+    data <- data[sample(nrow(data)), ]
+    for (i in seq(k)) {
+      train <- data[-splits[[i]], ]
+      test <- data[splits[[i]], ]
+
+      model <- glm(train$y ~ ., data = train, family = binomial)
+
+      losses_risk <- get_losses_and_risk(model, test)
+      losses[splits[[i]]] <- losses[splits[[i]]] + losses_risk$test_losses
+    }
+  }
+
+  losses <- losses / reps
+  n <- length(risk)
+  risk <- mean(losses)
+  std_err <- sd(risk) / sqrt(n)
+
+  res <- get_moe(std_err, n, risk)
+  true_risk_in_interval <-
+    (res$ci_lower <= true_risk && true_risk <= res$ci_upper)
+
+
+  list(
+    est_risk = risk,
+    std_err = std_err,
+    true_risk_in_interval = true_risk_in_interval,
+    losses = losses
+  )
+}
+
+
+cross_validation <- function(k, data, data_size, true_risk) {
+  splits <- split(data, cut(seq(data_size), k, labels = FALSE))
+
+  partition_risks <- c()
+
+  losses <- rep(0, length(data$y))
+
+  for (i in seq(k)) {
+    train <- data[-splits[[i]], ]
+    test <- data[splits[[i]], ]
+
+    model <- glm(train$y ~ ., data = train, family = binomial)
+
+    losses_risk <- get_losses_and_risk(model, test)
+    print("_----------------------------")
+    print(splits[[i]])
+    print("_----------------------------")
+    losses[splits[[i]]] <- losses[splits[[i]]] + losses_risk$test_losses
+    partition_risks <- c(partition_risks, losses_risk$test_risk)
+  }
+
+  risk <- mean(partition_risks)
+  std_err <- sd(partition_risks) / sqrt(k)
+  res <- get_moe(std_err, k, risk)
+  true_risk_in_interval <-
+    (res$ci_lower <= true_risk && true_risk <= res$ci_upper)
+
+
+  list(
+    est_risk = risk,
+    std_err = std_err,
+    true_risk_in_interval = true_risk_in_interval,
+    losses = losses
+  )
+}
+
+data_size <- 100
+data <- toy_data(data_size, 0)
+model <- glm(data$y ~ ., data = data, family = binomial)
+loss_risk <- get_losses_and_risk(model, df_dgp)
+true_risk <- loss_risk$test_risk
+
+
+results <- list()
+
+reps <- 500
+ks <- c(2, 4, 10, data_size)
+
+for (k in ks) {
+  std_errs <- c()
+  est_risks <- c()
+  true_risk_in_interval <- 0
+  for (rep in seq(reps)) {
+    res <- cross_validation(k,
+                            data, data_size, true_risk)
+
+    est_risks <- c(est_risks, res$est_risks)
+    std_errs <- c(std_errs, res$std_errs)
+    true_risk_in_interval <- true_risk_in_interval + res$true_risk_in_interval
+  }
+
+  results[[as.character(k)]] <- list(
+    est_risks = est_risks,
+    std_errs_median = median(std_errs),
+    std_errs = std_errs,
+    true_risk_in_interval_percentage = true_risk_in_interval / reps,
+  )
+}
+
+#for (k in ks) {
+#  res <- results[[as.character(k)]]
+#  plot_dt <- density(res$est_risks - true_risk)
+#
+#  plot(plot_dt,
+#    main = "Density Plot",
+#    xlab = "test_risk - true_risk", ylab = "Density"
+#  )
+#
+#  risk_diff_mean <- mean(res$est_risks - true_risk)
+#  std_err_median <- median(res$std_errs)
+#  percentage_in_interval <- res$true_risk_in_interval
+#}
+```
