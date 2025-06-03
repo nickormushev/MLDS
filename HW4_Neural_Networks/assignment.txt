@@ -1,0 +1,38 @@
+[PART 1]
+
+Implement multi-layer fully-connected artificial neural networks (ANN) for classification (target variable with a categorical distribution) with backpropagation: define the function to optimize, compute its gradient, and use gradient descent to find a solution. Use sigmoid activation functions. Your implementation should allow an arbitrary number of hidden layers of any size (sizes of input and output layers are problem-defined). Each layer should also use a bias. For this part, you do not need to implement regularization.
+
+Take care to numerically verify that the gradient and the optimization function are compatible: approximate gradients numerically and compare them to your gradient. In the report, describe your comparison procedure and results.
+
+Show that your implementation can perfectly fit the training data in doughnut.tab and squares.tab. Also, report on network parameters necessary for the fit; your goal is to have as small a network as possible.
+
+For the implementation of the ANN we only allow a single external library: numpy. Efficient implementation with matrix operations will be helpful but is not obligatory. The implementation must be structured so that tests from test_nn.py all succeed.
+
+[PART 2, grades 7-8]
+
+Extend your ANN from the first part:
+
+Add support for regression (normally distributed target variable). Classification and regression ANN should share as much code as possible; report on what needs to be different.
+Add support for regularization; its strength is defined with the lambda_ parameter. Take care not to regularize the bias used on every layer.
+Add support for different activation functions (at least Relu); users should be able to specify them per layer.
+Thoroughly compare your ANN with an existing implementation; report on the comparison.
+
+[PART 3, grades 9-10]
+
+This part of the homework is a competition and will be graded according to your final results.
+
+The data is FTIR spectral data set of human tissues, which means that for each tissue position (or "pixel") there is some spectral information. Effectively, you can imagine the data as images with an additional spectral dimension. The best models will likely use both spatial and spectral information, but feel free to simplify the problem and use either only spectral information (imagine "pixels" as independent) or spatial (convert to a black and white image). We have six classes in the data (0-5), and -1 denotes unannotated parts.
+
+Here is how tissue samples and an individual spectral look like. Both images were obtained with predict_lr.ipynb notebook.
+
+Tissue saples A spectrum
+
+You may use any existing ANN implementations to solve this part. In the report, clearly describe your final model and interesting steps in discovering it.
+
+The dataset, additional instructions, and an example python notebook are available in the competition server. As you can see in the example notebook, you will need to predict classes for the following image part: data_predict = data[265:465,360:660] (actually, only a subset of parts where the tissue mask is True and where we also have true annotations will be used for scoring). We have sent emails with the login information; if you did not receive it, please email marko.toplak@fri.uni-lj.si.
+
+GENERAL NOTES
+
+Submit your code for parts (1) and (2) in a single file named nn.py, a report (.pdf; no page limits), and a .zip file with code for task (3). Your code has to be Python 3.12 compatible and must conform to the unit tests from test_nn.py (see code and comments for implementation details).
+
+NotesOnBackprogragation.pdf contains helpful derivations and shows how similar gradients for classification and regression really are.

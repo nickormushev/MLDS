@@ -1,0 +1,39 @@
+[PART 1]
+
+Implement two regression methods, (1) kernelized ridge regression and (2) Support Vector Regression (SVR), and two kernels:
+
+Polynomial kernel κ(x,x′)=(1+xx′)M
+RBF kernel κ(x,x′)=exp(−
+||x−x′||2
+2σ2
+ 
+)
+Implement SVR by solving the optimization problem in Eq. (10) from (Smola and Scholkopf, 2004) with cvxopt.solvers.qp. Inputs to qp should be represented so that the solution x contains αi and α
+∗
+i
+ in the following order: [α1,α
+∗
+1
+,α2,α
+∗
+2
+,α3,α
+∗
+3
+,…]. Set C as 1/λ. To obtain b, use the output y from cvxopt.solvers.qp. b could, in theory, also be obtained from Eq. (16), but it is very sensitive to inaccuracies (therefore, do not use it; the equation also contains an error).
+
+Apply both regression methods and both kernels to the 1-dimensional sine data set. For each method/kernel find kernel and regularization parameters that fit well. For SVR, also take care to produce a sparse solution. This part aims to showcase what kernels can do and introduce the meaning of parameters. No need to do any formal parameter selection (such as with cross-validation) here. Plot the input data, the fit, and mark support vectors on the plot.
+
+[PART 2, grades 7-8]
+
+Sensibly apply both regression methods and both kernels to the housing2r data set. For each method/kernel, measure predictive performance with MSE and plot it versus a kernel parameter value (for polynomial kernel, M ∈ [1,10], for RBF choose interesting values of σ yourself). Take care to set ϵ properly. Plot two curves for each kernel/method, one with regularization parameter λ=1, and the other with λ set with internal cross validation (for each kernel parameter value separately). For SVR, also display the number of support vectors for each score and try to keep it to a minimum while still getting a good fit.
+
+Compare results between kernelized ridge regression and SVR and comment on the differences and similarities. Which learning algorithm would you prefer and why?
+
+[PART 3, grades 9-10]
+
+Find (or create) a regression data set with structured data: data with no natural description in a single table, such as text, images, graphs, or sound. Implement a kernel for the chosen data type and use it with either the kernelized ridge regression or SVR. Compare the resulting kernel to the naive attribute representation of your data set.
+
+GENERAL NOTES
+
+Submit your code in a single file named hw_kernels.py, a report (max. 1 page per part, .pdf) with plots, chosen parameters and comments, and a .zip file with code and data for task (3). Your code has to be Python 3.12 compatible and must conform to the unit tests from test_kernels.py (also see comments therein for implementation details). Your solution to regression methods and kernels can only use the python standard library, numpy, and cvxopt libraries. For data input, visualizations, and model evaluation (cross validation, scoring) you may use any additional libraries.
